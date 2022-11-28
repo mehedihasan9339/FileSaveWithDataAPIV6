@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using SaveFilesWithDataAPIV6.Context;
 using SaveFilesWithDataAPIV6.Data;
 using SaveFilesWithDataAPIV6.Models;
+using System;
 
 namespace SaveFilesWithDataAPIV6.Controllers
 {
@@ -19,6 +20,7 @@ namespace SaveFilesWithDataAPIV6.Controllers
 			_hostingEnvironment = hostingEnvironment;
 			_context = context;
 		}
+
 
 		[HttpPost("/api/SaveData")]
 		public async Task<IActionResult> SaveData([FromForm] BasicDataVm model)
@@ -58,6 +60,54 @@ namespace SaveFilesWithDataAPIV6.Controllers
 			}
 			return Ok(model);
 		}
+
+
+		[HttpPost("/api/SaveDataMultipleFile")]
+		public async Task<IActionResult> SaveDataMultipleFile([FromForm] BasicDataVm1 model)
+		{
+			if (!ModelState.IsValid) return BadRequest(ModelState);
+
+			try
+			{
+				//var fileName = new List<string>();
+				if (model.file != null)
+				{
+					foreach (var item in model.file)
+					{
+						//fileName.Add(item.FileName);
+						var FilePath = Path.Combine(_hostingEnvironment.WebRootPath + "/Files");
+						var filePath = Path.Combine(FilePath, item.FileName);
+						using (FileStream fs = System.IO.File.Create(filePath))
+						{
+							item.CopyTo(fs);
+						}
+
+
+
+
+
+						var data = new BasicInfo
+						{
+							Name = model.name,
+							Email = model.email,
+							Phone = model.phone,
+							fileUrl = item.FileName
+						};
+						_context.basicInfos.Add(data);
+						await _context.SaveChangesAsync();
+					}
+				}
+
+				
+			}
+			catch (Exception ex)
+			{
+
+				throw;
+			}
+			return Ok(model);
+		}
+
 
 		[HttpGet("/api/GetAllData")]
 		public async Task<IActionResult> GetAllData()
